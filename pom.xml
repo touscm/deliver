@@ -29,6 +29,8 @@
     <modules>
         <module>deliver-access</module>
         <module>deliver-log</module>
+        <module>deliver-log-appender</module>
+        <module>deliver-log-receiver</module>
         <module>deliver-pulsar-autoconfigure</module>
         <module>deliver-pulsar-starter</module>
     </modules>
@@ -43,6 +45,11 @@
                 <scope>import</scope>
             </dependency>
 
+            <dependency>
+                <groupId>com.touscm</groupId>
+                <artifactId>deliver-log</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
             <dependency>
                 <groupId>com.touscm</groupId>
                 <artifactId>deliver-pulsar-autoconfigure</artifactId>

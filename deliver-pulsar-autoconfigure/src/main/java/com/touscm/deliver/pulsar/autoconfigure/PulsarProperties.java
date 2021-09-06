@@ -27,6 +27,10 @@ public class PulsarProperties {
      */
     private String accessTopic;
     /**
+     * access-producer
+     */
+    private String accessProducer;
+    /**
      * access-subscribe
      */
     private String accessSubscribe;
@@ -35,6 +39,10 @@ public class PulsarProperties {
      * log
      */
     private String logTopic;
+    /**
+     * log-producer
+     */
+    private String logProducer;
     /**
      * log-subscribe
      */
@@ -75,6 +83,14 @@ public class PulsarProperties {
         this.accessTopic = accessTopic;
     }
 
+    public String getAccessProducer() {
+        return accessProducer;
+    }
+
+    public void setAccessProducer(String accessProducer) {
+        this.accessProducer = accessProducer;
+    }
+
     public String getAccessSubscribe() {
         return accessSubscribe;
     }
@@ -89,6 +105,14 @@ public class PulsarProperties {
 
     public void setLogTopic(String logTopic) {
         this.logTopic = logTopic;
+    }
+
+    public String getLogProducer() {
+        return logProducer;
+    }
+
+    public void setLogProducer(String logProducer) {
+        this.logProducer = logProducer;
     }
 
     public String getLogSubscribe() {

@@ -1,5 +1,7 @@
-package com.touscm.deliver.access;
+package com.touscm.deliver.log.receiver;
 
+import com.touscm.deliver.log.LogEntry;
+import com.touscm.deliver.log.StringUtils;
 import com.touscm.deliver.pulsar.autoconfigure.PulsarProperties;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.schema.SchemaDefinition;
@@ -17,9 +19,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-@Service("pulsarAccessReceiver")
-public class PulsarAccessReceiver implements IAccessReceiver {
-    private static final Logger logger = LoggerFactory.getLogger(PulsarAccessReceiver.class);
+@Service("pulsarLogReceiver")
+public class PulsarLogReceiver implements ILogReceiver {
+    private static final Logger logger = LoggerFactory.getLogger(PulsarLogReceiver.class);
 
     @Resource
     private PulsarProperties config;
@@ -27,18 +29,16 @@ public class PulsarAccessReceiver implements IAccessReceiver {
     private PulsarClient client;
 
     private static final Object locker = new Object();
-    private Consumer<AccessEntry> consumer;
+    private Consumer<LogEntry> consumer;
 
-    private Function<AccessEntry, Boolean> receiver;
+    private Function<LogEntry, Boolean> receiver;
 
     private boolean isInitExecutor = false;
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
 
-    /* ...... */
-
     @Override
-    public void reg(@NotNull Function<AccessEntry, Boolean> receiver) {
-        if (receiver == null) throw new RuntimeException("消息接受处理不能为NULL");
+    public void reg(@NotNull Function<LogEntry, Boolean> receiver) {
+        if (receiver == null) throw new RuntimeException("日志消息接受处理不能为NULL");
         this.receiver = receiver;
     }
 
@@ -49,28 +49,27 @@ public class PulsarAccessReceiver implements IAccessReceiver {
 
         setConsumer();
 
+
         executorService.scheduleAtFixedRate(() -> {
-            Message<AccessEntry> message;
+            Message<LogEntry> message;
             try {
                 message = consumer.receive();
             } catch (Throwable e) {
-                logger.error("接收请求记录消息异常", e);
+                logger.error("接收日志消息异常", e);
                 return;
             }
 
-            AccessEntry entry = message.getValue();
+            LogEntry entry = message.getValue();
             if (entry == null) {
-                logger.error("接收请求记录消息异常, 接收结果为NULL, messageKey:{}", message.getKey());
+                logger.error("接收日志消息出错, 接收结果为NULL, messageKey:{}", message.getKey());
                 return;
             }
-
-            logger.error("接收请求记录消息, entry:{}", StringUtils.toJson(entry));
 
             boolean isProcessed = false;
             try {
                 isProcessed = receiver.apply(entry);
             } catch (Throwable e) {
-                logger.error("请求记录处理异常, messageKey:{}", message.getKey(), e);
+                logger.error("日志处理异常, messageKey:{}, logEntry:{}", message.getKey(), StringUtils.toJson(entry), e);
             }
 
             if (!isProcessed) return;
@@ -107,19 +106,19 @@ public class PulsarAccessReceiver implements IAccessReceiver {
     private void setConsumer() {
         synchronized (locker) {
             if (consumer == null) {
-                String topic = config.getAccessTopic();
+                String topic = config.getLogTopic();
                 if (topic == null || topic.isEmpty()) {
-                    throw new RuntimeException("未配置Pulsar请求记录Topic");
+                    throw new RuntimeException("未配置Pulsar日志Topic");
                 }
 
-                String subscribe = config.getAccessSubscribe() == null || config.getAccessSubscribe().isEmpty() ? ACCESS_SUBSCRIBE : config.getAccessSubscribe();
-                Schema<AccessEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(AccessEntry.class).build());
+                String subscribe = StringUtils.isEmpty(config.getLogSubscribe()) ? SUBSCRIBE : config.getLogSubscribe();
+                Schema<LogEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(LogEntry.class).build());
 
                 try {
                     consumer = client.newConsumer(schema).topic(topic).subscriptionName(subscribe).subscribe();
                 } catch (PulsarClientException e) {
-                    logger.error("创建Consumer异常, topic:{}, subscribe:{}", topic, subscribe, e);
-                    throw new RuntimeException("创建Consumer异常", e);
+                    logger.error("创建日志Consumer异常, topic:{}, subscribe:{}", topic, subscribe, e);
+                    throw new RuntimeException("创建日志Consumer异常", e);
                 }
             }
         }
