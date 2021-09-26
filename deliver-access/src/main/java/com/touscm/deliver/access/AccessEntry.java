@@ -2,6 +2,9 @@ package com.touscm.deliver.access;
 
 import java.util.Date;
 
+/**
+ * 请求记录实体
+ */
 public class AccessEntry {
     /**
      * 请求类型
@@ -26,7 +29,7 @@ public class AccessEntry {
     private String mobile;
 
     /**
-     * 请求聂荣
+     * 请求内容
      */
     private String reqBody;
     /**

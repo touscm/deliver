@@ -41,8 +41,10 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
+        <elastic.version>7.14.0</elastic.version>
         <logback.version>1.2.3</logback.version>
         <gson.version>2.8.6</gson.version>
+        <jakarta-validation.version>2.0.2</jakarta-validation.version>
         <pulsar.version>2.8.0</pulsar.version>
         <slf4j.version>1.7.30</slf4j.version>
 
@@ -55,12 +57,14 @@
     </properties>
 
     <modules>
+        <module>deliver-base</module>
         <module>deliver-access</module>
         <module>deliver-log</module>
         <module>deliver-log-appender</module>
         <module>deliver-log-receiver</module>
         <module>deliver-pulsar-autoconfigure</module>
         <module>deliver-pulsar-starter</module>
+        <module>deliver-elastic</module>
     </modules>
 
     <dependencyManagement>
@@ -73,6 +77,11 @@
                 <scope>import</scope>
             </dependency>
 
+            <dependency>
+                <groupId>com.touscm</groupId>
+                <artifactId>deliver-base</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
             <dependency>
                 <groupId>com.touscm</groupId>
                 <artifactId>deliver-log</artifactId>
@@ -105,9 +114,20 @@
                 <version>${pulsar.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.elasticsearch.client</groupId>
+                <artifactId>elasticsearch-rest-high-level-client</artifactId>
+                <version>${elastic.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta-validation.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
