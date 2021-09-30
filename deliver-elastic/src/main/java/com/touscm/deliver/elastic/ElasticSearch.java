@@ -37,6 +37,9 @@ import java.util.Arrays;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.IndicesOptions.LENIENT_EXPAND_OPEN;
 
+/**
+ * ElasticSearch服务
+ */
 @Service
 public class ElasticSearch {
     private static final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
@@ -46,6 +49,11 @@ public class ElasticSearch {
 
     /* ...... */
 
+    /**
+     * 取得索引数组
+     *
+     * @return 索引数组
+     */
     public String[] getIndices() {
         try {
             GetIndexResponse response = this.esClient.indices().get(new GetIndexRequest().indicesOptions(LENIENT_EXPAND_OPEN), RequestOptions.DEFAULT);
@@ -56,6 +64,12 @@ public class ElasticSearch {
         return new String[]{};
     }
 
+    /**
+     * 判断索引是否存在
+     *
+     * @param index 索引
+     * @return 判断结果
+     */
     public boolean existIndex(@NotBlank String index) {
         try {
             return this.esClient.indices().exists(new GetIndexRequest(index), RequestOptions.DEFAULT);
@@ -65,6 +79,12 @@ public class ElasticSearch {
         return false;
     }
 
+    /**
+     * 创建索引
+     *
+     * @param index 索引
+     * @return 创建结果
+     */
     public boolean createIndex(@NotBlank String index) {
         CreateIndexRequest request = new CreateIndexRequest(index);
 
@@ -80,6 +100,12 @@ public class ElasticSearch {
         return false;
     }
 
+    /**
+     * 取得索引
+     *
+     * @param index 索引
+     * @return 索引
+     */
     public GetIndexResponse getIndex(String index) {
         try {
             GetIndexResponse response = this.esClient.indices().get(new GetIndexRequest(index), RequestOptions.DEFAULT);
@@ -93,6 +119,12 @@ public class ElasticSearch {
 
     /* ...... */
 
+    /**
+     * 统计索引记录数
+     *
+     * @param index 索引
+     * @return 记录数
+     */
     public long count(@NotBlank String index) {
         try {
             CountResponse response = this.esClient.count(new CountRequest(index), RequestOptions.DEFAULT);
@@ -105,13 +137,22 @@ public class ElasticSearch {
         return 0;
     }
 
+    /**
+     * 取得索引记录
+     *
+     * @param entryType 实体类型
+     * @param index     索引
+     * @param id        记录ID
+     * @param <T>       记录实体类型
+     * @return 索引记录实体
+     */
     public <T> ElasticEntry<T> get(@NotNull Class<T> entryType, @NotBlank String index, @NotBlank String id) {
         try {
             GetResponse response = this.esClient.get(new GetRequest(index, id), RequestOptions.DEFAULT);
             logger.debug("ElasticSearch Get API, index:{}, id:{}, response:{}", index, id, response);
 
-            if (response != null && response.isExists()) {
-                return new ElasticEntry<>(response.getId(), EntryUtils.parse(entryType, response.getSourceAsString()));
+            if (response != null) {
+                return new ElasticEntry<>(response.getId(), response.isExists() ? EntryUtils.parse(entryType, response.getSourceAsString()) : null);
             }
         } catch (IOException e) {
             logger.error("ElasticSearch Get API with exception, index:{}", index, e);
@@ -119,6 +160,14 @@ public class ElasticSearch {
         return null;
     }
 
+    /**
+     * 添加索引记录
+     *
+     * @param index 索引
+     * @param entry 记录实例
+     * @param <T>   实体类型
+     * @return 添加结果
+     */
     public <T> boolean index(@NotBlank String index, @NotNull T entry) {
         IndexRequest request = Requests.indexRequest(index).source(EntryUtils.toPropertyMap(entry));
 
@@ -134,14 +183,47 @@ public class ElasticSearch {
 
     /* ...... */
 
+    /**
+     * 取得索引记录分页
+     *
+     * @param entryType 实体类型
+     * @param index     索引
+     * @param page      页码
+     * @param size      分页尺寸
+     * @param <T>       实体类型
+     * @return 记录分页
+     */
     public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size) {
         return paging(entryType, index, page, size, null, false);
     }
 
+    /**
+     * 取得索引记录分页
+     *
+     * @param entryType 实体类型
+     * @param index     索引
+     * @param page      页码
+     * @param size      分页尺寸
+     * @param sort      排序字段
+     * @param <T>       实体类型
+     * @return 记录分页
+     */
     public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size, String sort) {
         return paging(entryType, index, page, size, sort, false);
     }
 
+    /**
+     * 取得索引记录分页
+     *
+     * @param entryType 实体类型
+     * @param index     索引
+     * @param page      页码
+     * @param size      分页尺寸
+     * @param sort      排序字段
+     * @param isAsc     是否顺序
+     * @param <T>       实体类型
+     * @return 记录分页
+     */
     public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size, String sort, boolean isAsc) {
         if (page <= 1) page = 1;
         int from = (page - 1) * size;
@@ -156,7 +238,7 @@ public class ElasticSearch {
 
             if (response != null && response.status() == RestStatus.OK) {
                 SearchHits hits = response.getHits();
-                return new PagingEntry<>(page, size, itemCount, Arrays.stream(hits.getHits()).map(a -> new ElasticEntry<T>(a.getId(), EntryUtils.parse(entryType, a.getSourceAsString()))).collect(toList()));
+                return new PagingEntry<>(page, size, itemCount, Arrays.stream(hits.getHits()).map(a -> new ElasticEntry<>(a.getId(), EntryUtils.parse(entryType, a.getSourceAsString()))).collect(toList()));
             }
         } catch (IOException e) {
             logger.error("ElasticSearch Search API with exception, index:{}, page:{}, size:{}, sort:{}, type:{}", index, page, size, sort, entryType.getName(), e);
