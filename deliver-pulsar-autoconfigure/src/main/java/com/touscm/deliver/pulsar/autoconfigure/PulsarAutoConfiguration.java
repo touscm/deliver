@@ -1,5 +1,7 @@
 package com.touscm.deliver.pulsar.autoconfigure;
 
+import org.apache.pulsar.client.api.AuthenticationFactory;
+import org.apache.pulsar.client.api.ClientBuilder;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.slf4j.Logger;
@@ -27,7 +29,14 @@ public class PulsarAutoConfiguration implements InitializingBean {
     @ConditionalOnMissingBean({PulsarClient.class})
     public PulsarClient pulsar() {
         try {
-            return PulsarClient.builder().serviceUrl(pulsarProperties.getUrl()).build();
+            ClientBuilder builder = PulsarClient.builder();
+
+            builder.serviceUrl(pulsarProperties.getUrl());
+            if (pulsarProperties.getToken() != null && !pulsarProperties.getToken().isEmpty()) {
+                builder.authentication(AuthenticationFactory.token(pulsarProperties.getToken()));
+            }
+
+            return builder.build();
         } catch (PulsarClientException e) {
             logger.error("创建PulsarClient异常, url:{}", pulsarProperties.getUrl(), e);
             throw new RuntimeException("创建PulsarClient异常", e);

@@ -21,6 +21,10 @@ public class PulsarProperties {
      * 6650
      */
     private int port;
+    /**
+     * auth token
+     */
+    private String token;
 
     /**
      * access
@@ -73,6 +77,14 @@ public class PulsarProperties {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public String getAccessTopic() {
