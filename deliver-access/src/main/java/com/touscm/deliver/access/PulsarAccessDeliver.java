@@ -1,10 +1,9 @@
 package com.touscm.deliver.access;
 
+import com.touscm.deliver.base.utils.EntryUtils;
+import com.touscm.deliver.base.utils.StringUtils;
 import com.touscm.deliver.pulsar.autoconfigure.PulsarProperties;
-import org.apache.pulsar.client.api.Producer;
-import org.apache.pulsar.client.api.PulsarClient;
-import org.apache.pulsar.client.api.PulsarClientException;
-import org.apache.pulsar.client.api.Schema;
+import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.schema.SchemaDefinition;
 import org.apache.pulsar.client.internal.DefaultImplementation;
 import org.slf4j.Logger;
@@ -15,6 +14,9 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.io.IOException;
 
+/**
+ * access request deliver by Pulsar
+ */
 @Service("pulsarAccessDeliver")
 public class PulsarAccessDeliver implements IAccessDeliver {
     private static final Logger logger = LoggerFactory.getLogger(PulsarAccessDeliver.class);
@@ -27,6 +29,12 @@ public class PulsarAccessDeliver implements IAccessDeliver {
     private static final Object locker = new Object();
     private Producer<AccessEntry> producer;
 
+    /**
+     * deliver access request message
+     *
+     * @param accessEntry access request entry
+     * @return deliver result
+     */
     @Override
     public boolean process(AccessEntry accessEntry) {
         if (accessEntry == null) return false;
@@ -34,10 +42,10 @@ public class PulsarAccessDeliver implements IAccessDeliver {
         setProducer();
 
         try {
-            logger.debug("发送请求记录消息, entry:{}", StringUtils.toJson(accessEntry));
+            logger.debug("发送请求记录消息, entry:{}", EntryUtils.toString(accessEntry));
             return producer.send(accessEntry) != null;
         } catch (PulsarClientException e) {
-            logger.error("发送请求记录消息异常, entry:{}", StringUtils.toJson(accessEntry), e);
+            logger.error("发送请求记录消息异常, entry:{}", EntryUtils.toString(accessEntry), e);
         }
 
         return false;
@@ -60,17 +68,17 @@ public class PulsarAccessDeliver implements IAccessDeliver {
         synchronized (locker) {
             if (producer == null) {
                 String topic = config.getAccessTopic();
-                if (topic == null || topic.isEmpty()) {
-                    throw new RuntimeException("未配置Pulsar请求记录Topic");
-                }
-
-                String producerName = StringUtils.isBlank(config.getAccessProducer()) ? PRODUCER : config.getAccessProducer();
-                Schema<AccessEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(AccessEntry.class).build());
+                if (StringUtils.isEmpty(topic)) throw new RuntimeException("未配置Pulsar请求记录Topic");
 
                 try {
-                    producer = client.newProducer(schema).topic(topic).producerName(producerName).create();
+                    Schema<AccessEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(AccessEntry.class).build());
+                    ProducerBuilder<AccessEntry> builder = client.newProducer(schema).topic(topic);
+                    if (StringUtils.isNotEmpty(config.getAccessProducer())) {
+                        builder.producerName(config.getAccessProducer());
+                    }
+                    producer = builder.create();
                 } catch (PulsarClientException e) {
-                    logger.error("创建Producer异常, topic:{}, producer:{}", topic, producerName, e);
+                    logger.error("创建Producer异常, topic:{}", topic, e);
                     throw new RuntimeException("创建Producer异常", e);
                 }
             }

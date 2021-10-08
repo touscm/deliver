@@ -2,8 +2,15 @@ package com.touscm.deliver.access;
 
 import java.io.Closeable;
 
+/**
+ * access request deliver
+ */
 public interface IAccessDeliver extends Closeable {
-    String PRODUCER = "access-producer";
-
+    /**
+     * deliver access request message
+     *
+     * @param accessEntry access request entry
+     * @return deliver result
+     */
     boolean process(AccessEntry accessEntry);
 }

@@ -1,5 +1,7 @@
 package com.touscm.deliver.access;
 
+import com.touscm.deliver.base.utils.EntryUtils;
+import com.touscm.deliver.base.utils.StringUtils;
 import com.touscm.deliver.pulsar.autoconfigure.PulsarProperties;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.schema.SchemaDefinition;
@@ -17,6 +19,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+/**
+ * access request receiver by Pulsar
+ */
 @Service("pulsarAccessReceiver")
 public class PulsarAccessReceiver implements IAccessReceiver {
     private static final Logger logger = LoggerFactory.getLogger(PulsarAccessReceiver.class);
@@ -36,12 +41,20 @@ public class PulsarAccessReceiver implements IAccessReceiver {
 
     /* ...... */
 
+    /**
+     * register receive access entry process
+     *
+     * @param receiver receive process
+     */
     @Override
     public void reg(@NotNull Function<AccessEntry, Boolean> receiver) {
         if (receiver == null) throw new RuntimeException("消息接受处理不能为NULL");
         this.receiver = receiver;
     }
 
+    /**
+     * start to receive access entry
+     */
     @Override
     public void start() {
         if (receiver == null) throw new RuntimeException("消息接受处理未注册");
@@ -64,7 +77,7 @@ public class PulsarAccessReceiver implements IAccessReceiver {
                 return;
             }
 
-            logger.error("接收请求记录消息, entry:{}", StringUtils.toJson(entry));
+            logger.debug("接收请求记录消息, entry:{}", EntryUtils.toString(entry));
 
             boolean isProcessed = false;
             try {
@@ -108,15 +121,13 @@ public class PulsarAccessReceiver implements IAccessReceiver {
         synchronized (locker) {
             if (consumer == null) {
                 String topic = config.getAccessTopic();
-                if (topic == null || topic.isEmpty()) {
-                    throw new RuntimeException("未配置Pulsar请求记录Topic");
-                }
+                if (StringUtils.isEmpty(topic)) throw new RuntimeException("未配置Pulsar请求记录Topic");
 
-                String subscribe = config.getAccessSubscribe() == null || config.getAccessSubscribe().isEmpty() ? ACCESS_SUBSCRIBE : config.getAccessSubscribe();
+                String subscribe = StringUtils.isEmpty(config.getAccessSubscribe()) ? ACCESS_SUBSCRIBE : config.getAccessSubscribe();
                 Schema<AccessEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(AccessEntry.class).build());
 
                 try {
-                    consumer = client.newConsumer(schema).topic(topic).subscriptionName(subscribe).subscribe();
+                    consumer = client.newConsumer(schema).topic(topic).subscriptionName(subscribe).subscriptionType(SubscriptionType.Exclusive).subscriptionInitialPosition(SubscriptionInitialPosition.Earliest).subscribe();
                 } catch (PulsarClientException e) {
                     logger.error("创建Consumer异常, topic:{}, subscribe:{}", topic, subscribe, e);
                     throw new RuntimeException("创建Consumer异常", e);
