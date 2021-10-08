@@ -7,12 +7,18 @@ public class PulsarProperties {
     public static final String PREFIX = "deliver.pulsar";
 
     public static final int DEFAULT_PORT = 6650;
-    public static final String DEFAULT_SCHEME = "pulsar://%s:%d";
+    public static final String DEFAULT_URL = "pulsar://%s:%d";
+    public static final String UDF_SCHEME_URL = "%s://%s:%d";
 
     /**
      * pulsar://localhost:6650
      */
     private String url;
+
+    /**
+     * connect scheme, default is pulsar
+     */
+    private String scheme;
     /**
      * localhost
      */
@@ -54,13 +60,25 @@ public class PulsarProperties {
 
     public String getUrl() {
         if (url == null || url.isEmpty()) {
-            return String.format(DEFAULT_SCHEME, host, port <= 0 ? DEFAULT_PORT : port);
+            if (scheme == null || scheme.isEmpty()) {
+                return String.format(DEFAULT_URL, host, port <= 0 ? DEFAULT_PORT : port);
+            } else {
+                return String.format(UDF_SCHEME_URL, scheme, host, port <= 0 ? DEFAULT_PORT : port);
+            }
         }
         return url;
     }
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getScheme() {
+        return scheme;
+    }
+
+    public void setScheme(String scheme) {
+        this.scheme = scheme;
     }
 
     public String getHost() {
