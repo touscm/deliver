@@ -20,11 +20,8 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -53,7 +50,10 @@ public class ElasticSearch {
 
     public static final String KEY_FROM = "from_";
     public static final String KEY_TO = "to_";
+
     public static final String KEY_FUZZY = "fuzzy_";
+
+    public static final String KEY_PREFIX = "prefix_";
 
     @Resource
     private RestHighLevelClient esClient;
@@ -319,6 +319,8 @@ public class ElasticSearch {
                     queryBuilder.must(QueryBuilders.rangeQuery(a.getKey().substring(KEY_TO.length())).to(a.getValue()));
                 } else if (a.getKey().startsWith(KEY_FUZZY) && KEY_FUZZY.length() < a.getKey().length()) {
                     queryBuilder.must(QueryBuilders.fuzzyQuery(a.getKey().substring(KEY_FUZZY.length()), a.getValue()));
+                } else if (a.getKey().startsWith(KEY_PREFIX) && KEY_PREFIX.length() < a.getKey().length() && a.getValue() instanceof String) {
+                    queryBuilder.must(QueryBuilders.prefixQuery(a.getKey().substring(KEY_PREFIX.length()), (String) a.getValue()));
                 } else {
                     queryBuilder.must(QueryBuilders.matchPhraseQuery(a.getKey(), a.getValue()));
                 }
