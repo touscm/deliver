@@ -53,6 +53,7 @@ public class ElasticSearch {
 
     public static final String KEY_FROM = "from_";
     public static final String KEY_TO = "to_";
+    public static final String KEY_FUZZY = "fuzzy_";
 
     @Resource
     private RestHighLevelClient esClient;
@@ -316,6 +317,8 @@ public class ElasticSearch {
                     queryBuilder.must(QueryBuilders.rangeQuery(a.getKey().substring(KEY_FROM.length())).from(a.getValue()));
                 } else if (a.getKey().startsWith(KEY_TO) && KEY_TO.length() < a.getKey().length()) {
                     queryBuilder.must(QueryBuilders.rangeQuery(a.getKey().substring(KEY_TO.length())).to(a.getValue()));
+                } else if (a.getKey().startsWith(KEY_FUZZY) && KEY_FUZZY.length() < a.getKey().length()) {
+                    queryBuilder.must(QueryBuilders.fuzzyQuery(a.getKey().substring(KEY_FUZZY.length()), a.getValue()));
                 } else {
                     queryBuilder.must(QueryBuilders.matchPhraseQuery(a.getKey(), a.getValue()));
                 }
