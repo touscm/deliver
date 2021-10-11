@@ -2,6 +2,7 @@ package com.touscm.deliver.elastic;
 
 import com.touscm.deliver.base.entry.ElasticEntry;
 import com.touscm.deliver.base.entry.PagingEntry;
+import com.touscm.deliver.base.utils.CollectionUtils;
 import com.touscm.deliver.base.utils.EntryUtils;
 import com.touscm.deliver.base.utils.StringUtils;
 import org.elasticsearch.action.get.GetRequest;
@@ -19,6 +20,11 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -33,6 +39,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.IndicesOptions.LENIENT_EXPAND_OPEN;
@@ -43,6 +50,9 @@ import static org.elasticsearch.action.support.IndicesOptions.LENIENT_EXPAND_OPE
 @Service
 public class ElasticSearch {
     private static final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
+
+    public static final String KEY_FROM = "from_";
+    public static final String KEY_TO = "to_";
 
     @Resource
     private RestHighLevelClient esClient;
@@ -194,7 +204,7 @@ public class ElasticSearch {
      * @return 记录分页
      */
     public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size) {
-        return paging(entryType, index, page, size, null, false);
+        return paging(entryType, index, page, size, null, null, false);
     }
 
     /**
@@ -209,7 +219,7 @@ public class ElasticSearch {
      * @return 记录分页
      */
     public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size, String sort) {
-        return paging(entryType, index, page, size, sort, false);
+        return paging(entryType, index, page, size, null, sort, false);
     }
 
     /**
@@ -225,9 +235,42 @@ public class ElasticSearch {
      * @return 记录分页
      */
     public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size, String sort, boolean isAsc) {
+        return paging(entryType, index, page, size, null, sort, isAsc);
+    }
+
+    /**
+     * 取得索引记录分页
+     *
+     * @param entryType 实体类型
+     * @param index     索引
+     * @param page      页码
+     * @param size      分页尺寸
+     * @param filter    检索参数
+     * @param sort      排序字段
+     * @param <T>       实体类型
+     * @return 记录分页
+     */
+    public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size, Map<String, Object> filter, String sort) {
+        return paging(entryType, index, page, size, null, sort, false);
+    }
+
+    /**
+     * 取得索引记录分页
+     *
+     * @param entryType 实体类型
+     * @param index     索引
+     * @param page      页码
+     * @param size      分页尺寸
+     * @param filter    检索参数
+     * @param sort      排序字段
+     * @param isAsc     是否顺序
+     * @param <T>       实体类型
+     * @return 记录分页
+     */
+    public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size, Map<String, Object> filter, String sort, boolean isAsc) {
         if (page <= 1) page = 1;
         int from = (page - 1) * size;
-        SearchRequest request = new SearchRequest(index).source(getSearchSourceBuilder(sort, isAsc, from, size));
+        SearchRequest request = new SearchRequest(index).source(getSearchSourceBuilder(filter, sort, isAsc, from, size));
 
         long itemCount = count(index);
         if (itemCount == 0) return new PagingEntry<>();
@@ -262,8 +305,26 @@ public class ElasticSearch {
 
     /* ...... */
 
-    private SearchSourceBuilder getSearchSourceBuilder(String sort, boolean isAsc, int from, int size) {
+    private SearchSourceBuilder getSearchSourceBuilder(Map<String, Object> filters, String sort, boolean isAsc, int from, int size) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
+
+        if (CollectionUtils.isNotEmpty(filters)) {
+            BoolQueryBuilder queryBuilder = new BoolQueryBuilder();
+
+            filters.entrySet().stream().filter(a -> StringUtils.isNotEmpty(a.getKey()) && a.getValue() != null).forEach(a -> {
+                if (a.getKey().startsWith(KEY_FROM) && KEY_FROM.length() < a.getKey().length()) {
+                    queryBuilder.must(QueryBuilders.rangeQuery(a.getKey().substring(KEY_FROM.length())).from(a.getValue()));
+                } else if (a.getKey().startsWith(KEY_TO) && KEY_TO.length() < a.getKey().length()) {
+                    queryBuilder.must(QueryBuilders.rangeQuery(a.getKey().substring(KEY_TO.length())).to(a.getValue()));
+                } else {
+                    queryBuilder.must(QueryBuilders.matchPhraseQuery(a.getKey(), a.getValue()));
+                }
+            });
+
+            if (queryBuilder.hasClauses()) {
+                builder.query(queryBuilder);
+            }
+        }
 
         if (StringUtils.isNotBlank(sort)) {
             builder.sort(sort, isAsc ? SortOrder.ASC : SortOrder.DESC);

@@ -70,8 +70,9 @@ public class PulsarAccessDeliver implements IAccessDeliver {
                 String topic = config.getAccessTopic();
                 if (StringUtils.isEmpty(topic)) throw new RuntimeException("未配置Pulsar请求记录Topic");
 
+                Schema<AccessEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(AccessEntry.class).build());
+
                 try {
-                    Schema<AccessEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(AccessEntry.class).build());
                     ProducerBuilder<AccessEntry> builder = client.newProducer(schema).topic(topic);
                     if (StringUtils.isNotEmpty(config.getAccessProducer())) {
                         builder.producerName(config.getAccessProducer());
