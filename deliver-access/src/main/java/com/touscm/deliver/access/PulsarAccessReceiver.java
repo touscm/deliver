@@ -1,11 +1,13 @@
 package com.touscm.deliver.access;
 
+import com.touscm.deliver.base.utils.CollectionUtils;
 import com.touscm.deliver.base.utils.EntryUtils;
 import com.touscm.deliver.base.utils.StringUtils;
 import com.touscm.deliver.pulsar.autoconfigure.PulsarProperties;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.schema.SchemaDefinition;
 import org.apache.pulsar.client.internal.DefaultImplementation;
+import org.apache.pulsar.shade.com.google.common.collect.Streams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -14,10 +16,13 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.validation.constraints.NotNull;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * access request receiver by Pulsar
@@ -96,6 +101,63 @@ public class PulsarAccessReceiver implements IAccessReceiver {
                 try {
                     consumer.negativeAcknowledge(message);
                 } catch (Throwable ignored) {
+                }
+            }
+        }, 0, 1, TimeUnit.SECONDS);
+
+        isInitExecutor = true;
+    }
+
+    /**
+     * start batch receive access entry
+     */
+    @Override
+    public void startBatch() {
+        if (receiver == null) throw new RuntimeException("消息接受处理未注册");
+        if (isInitExecutor) return;
+
+        setConsumer();
+
+        executorService.scheduleAtFixedRate(() -> {
+            Messages<AccessEntry> messages;
+            try {
+                messages = consumer.batchReceive();
+            } catch (Throwable e) {
+                logger.error("batch receive message with exception", e);
+                return;
+            }
+
+            if (messages == null || messages.size() == 0) {
+                return;
+            }
+
+            List<MessageId> messageIds = Streams.stream(messages.iterator()).filter(message -> {
+                AccessEntry entry;
+                if ((entry = message.getValue()) == null) {
+                    logger.error("receive AccessEntry is null, messageKey:{}", message.getKey());
+                    return false;
+                }
+
+                try {
+                    return receiver.apply(entry);
+                } catch (Throwable e) {
+                    logger.error("process AccessEntry with exception, messageKey:{}", message.getKey(), e);
+                    return false;
+                }
+            }).map(Message::getMessageId).collect(toList());
+
+            if (CollectionUtils.isEmpty(messageIds)) {
+                return;
+            }
+
+            try {
+                consumer.acknowledge(messageIds);
+            } catch (Throwable e) {
+                for (MessageId messageId : messageIds) {
+                    try {
+                        consumer.negativeAcknowledge(messageId);
+                    } catch (Throwable ignored) {
+                    }
                 }
             }
         }, 0, 1, TimeUnit.SECONDS);

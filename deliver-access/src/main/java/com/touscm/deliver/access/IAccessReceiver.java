@@ -17,7 +17,12 @@ public interface IAccessReceiver extends Closeable {
     void reg(Function<AccessEntry, Boolean> receiver);
 
     /**
-     * start to receive access entry
+     * start receive access entry
      */
     void start();
+
+    /**
+     * start batch receive access entry
+     */
+    void startBatch();
 }
