@@ -187,6 +187,8 @@ public class PulsarAccessReceiver implements IAccessReceiver {
                 this.executorCount = executorCount;
             }
         }
+
+        logger.info("init ExecutorService, count:{}", this.executorCount);
         this.executorService = Executors.newScheduledThreadPool(executorCount);
     }
 
@@ -195,29 +197,33 @@ public class PulsarAccessReceiver implements IAccessReceiver {
         try {
             message = consumer.receive();
         } catch (Throwable e) {
-            logger.error("接收请求记录消息异常", e);
+            logger.error("receive message with exception", e);
             return;
         }
 
-        AccessEntry entry = message.getValue();
-        if (entry == null) {
-            logger.error("接收请求记录消息异常, 接收结果为NULL, messageKey:{}", message.getKey());
+        if (message == null) return;
+
+        AccessEntry accessEntry;
+        if ((accessEntry = message.getValue()) == null) {
+            logger.error("get message entry error, accessEntry is null, messageKey:{}", message.getKey());
             return;
         }
-
-        logger.debug("接收请求记录消息, entry:{}", EntryUtils.toString(entry));
 
         boolean isProcessed = false;
         try {
-            isProcessed = receiver.apply(entry);
+            isProcessed = receiver.apply(accessEntry);
         } catch (Throwable e) {
-            logger.error("请求记录处理异常, messageKey:{}", message.getKey(), e);
+            logger.error("process message entry with exception, messageKey:{}, messageEntry:{}", message.getKey(), EntryUtils.toString(accessEntry), e);
         }
 
         if (!isProcessed) return;
 
+        acknowledgeConsume(message);
+    }
+
+    private void acknowledgeConsume(Message<AccessEntry> message) {
         try {
-            consumer.acknowledge(message);
+            consumer.acknowledge(message.getMessageId());
         } catch (Throwable e) {
             try {
                 consumer.negativeAcknowledge(message);
