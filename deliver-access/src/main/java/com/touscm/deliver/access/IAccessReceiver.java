@@ -17,9 +17,16 @@ public interface IAccessReceiver extends Closeable {
     void reg(Function<AccessEntry, Boolean> receiver);
 
     /**
-     * start receive access entry
+     * start receive process
      */
     void start();
+
+    /**
+     * start receive process
+     *
+     * @param executorCount process executor number
+     */
+    void start(int executorCount);
 
     /**
      * start batch receive access entry

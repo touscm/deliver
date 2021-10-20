@@ -41,8 +41,9 @@ public class PulsarAccessReceiver implements IAccessReceiver {
 
     private Function<AccessEntry, Boolean> receiver;
 
-    private boolean isInitExecutor = false;
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+    private boolean isInit = false;
+    private int executorCount = 0;
+    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
 
     /* ...... */
 
@@ -58,54 +59,31 @@ public class PulsarAccessReceiver implements IAccessReceiver {
     }
 
     /**
-     * start to receive access entry
+     * start receive process
      */
     @Override
     public void start() {
+        start(1);
+    }
+
+    /**
+     * start receive process
+     *
+     * @param executorCount process executor number
+     */
+    @Override
+    public void start(int executorCount) {
         if (receiver == null) throw new RuntimeException("消息接受处理未注册");
-        if (isInitExecutor) return;
+        if (isInit) return;
 
-        setConsumer();
+        initConsumer();
+        initExecutorService(executorCount);
 
-        executorService.scheduleAtFixedRate(() -> {
-            Message<AccessEntry> message;
-            try {
-                message = consumer.receive();
-            } catch (Throwable e) {
-                logger.error("接收请求记录消息异常", e);
-                return;
-            }
+        for (int i = 0; i < this.executorCount; i++) {
+            executorService.scheduleAtFixedRate(this::receiveAccessEntry, 0, 1, TimeUnit.SECONDS);
+        }
 
-            AccessEntry entry = message.getValue();
-            if (entry == null) {
-                logger.error("接收请求记录消息异常, 接收结果为NULL, messageKey:{}", message.getKey());
-                return;
-            }
-
-            logger.debug("接收请求记录消息, entry:{}", EntryUtils.toString(entry));
-
-            boolean isProcessed = false;
-            try {
-                isProcessed = receiver.apply(entry);
-            } catch (Throwable e) {
-                logger.error("请求记录处理异常, messageKey:{}", message.getKey(), e);
-            }
-
-            if (!isProcessed) return;
-
-            try {
-                // Acknowledge the message so that it can be deleted by the message broker
-                consumer.acknowledge(message);
-            } catch (Throwable e) {
-                // Message failed to process, redeliver later
-                try {
-                    consumer.negativeAcknowledge(message);
-                } catch (Throwable ignored) {
-                }
-            }
-        }, 0, 1, TimeUnit.SECONDS);
-
-        isInitExecutor = true;
+        isInit = true;
     }
 
     /**
@@ -114,9 +92,9 @@ public class PulsarAccessReceiver implements IAccessReceiver {
     @Override
     public void startBatch() {
         if (receiver == null) throw new RuntimeException("消息接受处理未注册");
-        if (isInitExecutor) return;
+        if (isInit) return;
 
-        setConsumer();
+        initConsumer();
 
         executorService.scheduleAtFixedRate(() -> {
             Messages<AccessEntry> messages;
@@ -162,7 +140,7 @@ public class PulsarAccessReceiver implements IAccessReceiver {
             }
         }, 0, 1, TimeUnit.SECONDS);
 
-        isInitExecutor = true;
+        isInit = true;
     }
 
     @Override
@@ -179,7 +157,7 @@ public class PulsarAccessReceiver implements IAccessReceiver {
 
     /* ...... */
 
-    private void setConsumer() {
+    private void initConsumer() {
         synchronized (locker) {
             if (consumer == null) {
                 String topic = config.getAccessTopic();
@@ -194,6 +172,56 @@ public class PulsarAccessReceiver implements IAccessReceiver {
                     logger.error("创建Consumer异常, topic:{}, subscribe:{}", topic, subscribe, e);
                     throw new RuntimeException("创建Consumer异常", e);
                 }
+            }
+        }
+    }
+
+    private void initExecutorService(int executorCount) {
+        if (executorCount <= 0) {
+            this.executorCount = 1;
+        } else {
+            int max;
+            if ((max = Runtime.getRuntime().availableProcessors()) < executorCount) {
+                this.executorCount = max;
+            } else {
+                this.executorCount = executorCount;
+            }
+        }
+        this.executorService = Executors.newScheduledThreadPool(executorCount);
+    }
+
+    private void receiveAccessEntry() {
+        Message<AccessEntry> message;
+        try {
+            message = consumer.receive();
+        } catch (Throwable e) {
+            logger.error("接收请求记录消息异常", e);
+            return;
+        }
+
+        AccessEntry entry = message.getValue();
+        if (entry == null) {
+            logger.error("接收请求记录消息异常, 接收结果为NULL, messageKey:{}", message.getKey());
+            return;
+        }
+
+        logger.debug("接收请求记录消息, entry:{}", EntryUtils.toString(entry));
+
+        boolean isProcessed = false;
+        try {
+            isProcessed = receiver.apply(entry);
+        } catch (Throwable e) {
+            logger.error("请求记录处理异常, messageKey:{}", message.getKey(), e);
+        }
+
+        if (!isProcessed) return;
+
+        try {
+            consumer.acknowledge(message);
+        } catch (Throwable e) {
+            try {
+                consumer.negativeAcknowledge(message);
+            } catch (Throwable ignored) {
             }
         }
     }
