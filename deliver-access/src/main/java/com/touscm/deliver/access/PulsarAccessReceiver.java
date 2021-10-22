@@ -1,5 +1,6 @@
 package com.touscm.deliver.access;
 
+import com.touscm.deliver.base.constant.ConsumeMode;
 import com.touscm.deliver.base.utils.CollectionUtils;
 import com.touscm.deliver.base.utils.EntryUtils;
 import com.touscm.deliver.base.utils.StringUtils;
@@ -17,6 +18,7 @@ import javax.annotation.Resource;
 import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +45,10 @@ public class PulsarAccessReceiver implements IAccessReceiver {
 
     private boolean isInit = false;
     private int executorCount = 0;
-    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+    private ConsumeMode consumeMode;
+
+    private ExecutorService executorService;
+    private ScheduledExecutorService scheduledExecutorService;
 
     /* ...... */
 
@@ -63,24 +68,33 @@ public class PulsarAccessReceiver implements IAccessReceiver {
      */
     @Override
     public void start() {
-        start(1);
+        start(ConsumeMode.Scheduled, 1);
     }
 
     /**
      * start receive process
      *
+     * @param consumeMode   run mode
      * @param executorCount process executor number
      */
     @Override
-    public void start(int executorCount) {
+    public void start(ConsumeMode consumeMode, int executorCount) {
         if (receiver == null) throw new RuntimeException("消息接受处理未注册");
         if (isInit) return;
 
         initConsumer();
-        initExecutorService(executorCount);
+        initExecutorService(consumeMode, executorCount);
 
         for (int i = 0; i < this.executorCount; i++) {
-            executorService.scheduleAtFixedRate(this::receiveAccessEntry, 0, 1, TimeUnit.SECONDS);
+            if (ConsumeMode.Longtime == this.consumeMode) {
+                executorService.execute(() -> {
+                    while (true) {
+                        receiveAccessEntry();
+                    }
+                });
+            } else {
+                scheduledExecutorService.scheduleAtFixedRate(this::receiveAccessEntry, 0, 1, TimeUnit.SECONDS);
+            }
         }
 
         isInit = true;
@@ -96,7 +110,7 @@ public class PulsarAccessReceiver implements IAccessReceiver {
 
         initConsumer();
 
-        executorService.scheduleAtFixedRate(() -> {
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
             Messages<AccessEntry> messages;
             try {
                 messages = consumer.batchReceive();
@@ -146,7 +160,12 @@ public class PulsarAccessReceiver implements IAccessReceiver {
     @Override
     @PreDestroy
     public void close() throws IOException {
-        executorService.shutdown();
+        if (ConsumeMode.Longtime == this.consumeMode) {
+            executorService.shutdown();
+        } else {
+            scheduledExecutorService.shutdown();
+        }
+
         if (client != null) {
             client.close();
         }
@@ -176,7 +195,7 @@ public class PulsarAccessReceiver implements IAccessReceiver {
         }
     }
 
-    private void initExecutorService(int executorCount) {
+    private void initExecutorService(ConsumeMode consumeMode, int executorCount) {
         if (executorCount <= 0) {
             this.executorCount = 1;
         } else {
@@ -188,8 +207,15 @@ public class PulsarAccessReceiver implements IAccessReceiver {
             }
         }
 
-        logger.info("init ExecutorService, count:{}", this.executorCount);
-        this.executorService = Executors.newScheduledThreadPool(executorCount);
+        logger.info("init processor, count:{}", this.executorCount);
+
+        this.consumeMode = consumeMode;
+
+        if (ConsumeMode.Longtime == this.consumeMode) {
+            this.executorService = Executors.newWorkStealingPool(this.executorCount);
+        } else {
+            this.scheduledExecutorService = Executors.newScheduledThreadPool(executorCount);
+        }
     }
 
     private void receiveAccessEntry() {

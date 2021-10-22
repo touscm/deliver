@@ -1,5 +1,7 @@
 package com.touscm.deliver.access;
 
+import com.touscm.deliver.base.constant.ConsumeMode;
+
 import java.io.Closeable;
 import java.util.function.Function;
 
@@ -24,9 +26,10 @@ public interface IAccessReceiver extends Closeable {
     /**
      * start receive process
      *
+     * @param consumeMode   run mode
      * @param executorCount process executor number
      */
-    void start(int executorCount);
+    void start(ConsumeMode consumeMode, int executorCount);
 
     /**
      * start batch receive access entry
