@@ -83,6 +83,10 @@ public class AccessEntry {
      * 设备型号
      */
     private String deviceModel;
+    /**
+     * 设备ID
+     */
+    private String deviceId;
 
     /**
      * 访问时间
@@ -295,6 +299,15 @@ public class AccessEntry {
 
     public AccessEntry setDeviceModel(String deviceModel) {
         this.deviceModel = deviceModel;
+        return this;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public AccessEntry setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
         return this;
     }
 

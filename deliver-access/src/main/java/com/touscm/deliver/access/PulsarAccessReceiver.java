@@ -40,7 +40,6 @@ public class PulsarAccessReceiver implements IAccessReceiver {
 
     private static final Object locker = new Object();
     private Consumer<AccessEntry> consumer;
-
     private Function<AccessEntry, Boolean> receiver;
 
     private boolean isInit = false;
