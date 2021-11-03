@@ -24,7 +24,7 @@ public interface IProducer<T> {
     boolean send(@NotNull T entry);
 
     /**
-     * send message after the specified relative delay
+     * send message after the specified relative delay<br>
      * <b>Note</b>: messages are only delivered with delay when a consumer is consuming through a SubscriptionType.Shared subscription. With other subscription types, the messages will still be delivered immediately.
      *
      * @param entry message entry
@@ -35,7 +35,7 @@ public interface IProducer<T> {
     boolean sendAfter(@NotNull T entry, long delay, TimeUnit unit);
 
     /**
-     * send message at the specified timestamp
+     * send message at the specified timestamp<br>
      * <b>Note</b>: messages are only delivered with delay when a consumer is consuming through a SubscriptionType.Shared subscription. With other subscription types, the messages will still be delivered immediately.
      *
      * @param entry     message entry
