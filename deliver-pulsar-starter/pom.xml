@@ -29,6 +29,10 @@
             <groupId>com.touscm</groupId>
             <artifactId>deliver-pulsar-autoconfigure</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.touscm</groupId>
+            <artifactId>deliver-base</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
