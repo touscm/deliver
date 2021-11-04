@@ -19,6 +19,7 @@ public class PulsarAccessDeliver implements IAccessDeliver {
     @Resource
     private IProducer<AccessEntry> accessProducer;
 
+    private boolean isInit = false;
     private static final Object locker = new Object();
 
     /**
@@ -45,11 +46,12 @@ public class PulsarAccessDeliver implements IAccessDeliver {
 
     private void setProducer() {
         synchronized (locker) {
-            if (accessProducer == null) {
-                String topic = config.getAccessTopic(), producerName = config.getAccessProducer();
+            if (!this.isInit) {
+                String topic = config.getAccessTopic();
                 if (StringUtils.isEmpty(topic)) throw new RuntimeException("未配置Pulsar请求记录Topic");
 
-                accessProducer.init(AccessEntry.class, topic, producerName);
+                this.accessProducer.init(AccessEntry.class, topic, config.getAccessProducer());
+                this.isInit = true;
             }
         }
     }

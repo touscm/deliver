@@ -33,7 +33,7 @@ public class PulsarProperties {
     private String token;
 
     /**
-     * access
+     * access-topic
      */
     private String accessTopic;
     /**
