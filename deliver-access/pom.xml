@@ -22,13 +22,7 @@
     <dependencies>
         <dependency>
             <groupId>com.touscm</groupId>
-            <artifactId>deliver-base</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.touscm</groupId>
-            <artifactId>deliver-pulsar-autoconfigure</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <artifactId>deliver-pulsar-starter</artifactId>
         </dependency>
     </dependencies>
 

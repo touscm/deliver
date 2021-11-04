@@ -5,9 +5,10 @@ import org.apache.pulsar.client.api.SubscriptionType;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.io.Closeable;
 import java.util.function.Function;
 
-public interface IConsumer<T> {
+public interface IConsumer<T> extends Closeable {
     /**
      * register receive message process
      *

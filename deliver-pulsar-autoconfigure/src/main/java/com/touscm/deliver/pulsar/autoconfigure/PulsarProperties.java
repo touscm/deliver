@@ -44,6 +44,10 @@ public class PulsarProperties {
      * access-subscribe
      */
     private String accessSubscribe;
+    /**
+     * access-executor-count
+     */
+    private int accessExecutorCount;
 
     /**
      * log
@@ -57,6 +61,10 @@ public class PulsarProperties {
      * log-subscribe
      */
     private String logSubscribe;
+    /**
+     * log-executor-count
+     */
+    private int logExecutorCount;
 
     public String getUrl() {
         if (url == null || url.isEmpty()) {
@@ -129,6 +137,14 @@ public class PulsarProperties {
         this.accessSubscribe = accessSubscribe;
     }
 
+    public int getAccessExecutorCount() {
+        return accessExecutorCount;
+    }
+
+    public void setAccessExecutorCount(int accessExecutorCount) {
+        this.accessExecutorCount = accessExecutorCount;
+    }
+
     public String getLogTopic() {
         return logTopic;
     }
@@ -151,5 +167,13 @@ public class PulsarProperties {
 
     public void setLogSubscribe(String logSubscribe) {
         this.logSubscribe = logSubscribe;
+    }
+
+    public int getLogExecutorCount() {
+        return logExecutorCount;
+    }
+
+    public void setLogExecutorCount(int logExecutorCount) {
+        this.logExecutorCount = logExecutorCount;
     }
 }

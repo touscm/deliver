@@ -12,6 +12,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 @Service("PulsarProducer")
@@ -115,6 +116,19 @@ public class PulsarProducer<T> implements IProducer<T> {
         }
 
         return false;
+    }
+
+    /* ...... */
+
+    /**
+     * close pulsar producer
+     *
+     * @throws IOException PulsarClientException
+     */
+    public void close() throws IOException {
+        if (producer != null) {
+            producer.close();
+        }
     }
 
     /* ...... */

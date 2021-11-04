@@ -14,6 +14,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -113,6 +114,25 @@ public class PulsarConsumer<T> implements IConsumer<T> {
         }
 
         isInit = true;
+    }
+
+    /* ...... */
+
+    /**
+     * close pulsar consumer
+     *
+     * @throws IOException PulsarClientException
+     */
+    public void close() throws IOException {
+        if (ConsumeMode.Longtime == this.consumeMode) {
+            if (executorService != null) executorService.shutdown();
+        } else {
+            if (scheduledExecutorService != null) scheduledExecutorService.shutdown();
+        }
+
+        if (consumer != null) {
+            consumer.close();
+        }
     }
 
     /* ...... */

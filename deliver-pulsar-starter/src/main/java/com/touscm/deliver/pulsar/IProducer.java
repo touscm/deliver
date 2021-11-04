@@ -2,10 +2,10 @@ package com.touscm.deliver.pulsar;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
-public interface IProducer<T> {
-
+public interface IProducer<T> extends Closeable {
     /**
      * initialize message entry type and set topic
      *
