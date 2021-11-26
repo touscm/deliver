@@ -19,10 +19,9 @@ import java.util.concurrent.TimeUnit;
 public class PulsarProducer<T> implements IProducer<T> {
     private static final Logger logger = LoggerFactory.getLogger(PulsarProducer.class);
 
-    private boolean isInitProducer = false;
-
     @Resource
     private PulsarClient client;
+
     private Producer<T> producer;
 
     /**
@@ -36,9 +35,7 @@ public class PulsarProducer<T> implements IProducer<T> {
         Assert.notNull(entryType, "Entry type can't be null");
         Assert.hasText(topic, "Topic can't be empty");
 
-        if (!isInitProducer) {
-            setProducer(entryType, topic, producerName);
-        }
+        initProducer(entryType, topic, producerName);
     }
 
     /**
@@ -50,18 +47,15 @@ public class PulsarProducer<T> implements IProducer<T> {
     public boolean send(@NotNull T entry) {
         Assert.notNull(entry, "Send entry can't be null");
 
-        if (!isInitProducer) {
-            throw new RuntimeException("Please call init() method first");
-        }
+        if (producer == null) throw new RuntimeException("Please call init() method first");
 
         try {
             MessageId messageId = producer.send(entry);
-            logger.debug("send message success, messageId:{}, entry:{}", messageId, EntryUtils.toString(entry));
+            logger.debug("send message success, topic:{}, producerName:{}, messageId:{}, entry:{}", producer.getTopic(), producer.getProducerName(), messageId, EntryUtils.toString(entry));
             return true;
         } catch (PulsarClientException e) {
-            logger.error("send message with exception, entry:{}", EntryUtils.toString(entry), e);
+            logger.error("send message with exception, topic:{}, producerName:{}, entry:{}", producer.getTopic(), producer.getProducerName(), EntryUtils.toString(entry), e);
         }
-
         return false;
     }
 
@@ -77,18 +71,15 @@ public class PulsarProducer<T> implements IProducer<T> {
     public boolean sendAfter(@NotNull T entry, long delay, TimeUnit unit) {
         Assert.notNull(entry, "Send entry can't be null");
 
-        if (!isInitProducer) {
-            throw new RuntimeException("Please call init() method first");
-        }
+        if (producer == null) throw new RuntimeException("Please call init() method first");
 
         try {
             MessageId messageId = producer.newMessage().value(entry).deliverAfter(delay, unit).send();
-            logger.debug("send message success, messageId:{}, entry:{}", messageId, EntryUtils.toString(entry));
+            logger.debug("send message success, topic:{}, producerName:{}, messageId:{}, entry:{}", producer.getTopic(), producer.getProducerName(), messageId, EntryUtils.toString(entry));
             return true;
         } catch (PulsarClientException e) {
-            logger.error("send message with exception, entry:{}", EntryUtils.toString(entry), e);
+            logger.error("send message with exception, topic:{}, producerName:{}, entry:{}", producer.getTopic(), producer.getProducerName(), EntryUtils.toString(entry), e);
         }
-
         return false;
     }
 
@@ -103,18 +94,15 @@ public class PulsarProducer<T> implements IProducer<T> {
     public boolean sendAt(@NotNull T entry, long timestamp) {
         Assert.notNull(entry, "Send entry can't be null");
 
-        if (!isInitProducer) {
-            throw new RuntimeException("Please call init() method first");
-        }
+        if (producer == null) throw new RuntimeException("Please call init() method first");
 
         try {
             MessageId messageId = producer.newMessage().value(entry).deliverAt(timestamp).send();
-            logger.debug("send message success, messageId:{}, timestamp:{}, entry:{}", messageId, timestamp, EntryUtils.toString(entry));
+            logger.debug("send message success, topic:{}, producerName:{}, messageId:{}, entry:{}", producer.getTopic(), producer.getProducerName(), messageId, EntryUtils.toString(entry));
             return true;
         } catch (PulsarClientException e) {
-            logger.error("send message with exception, entry:{}", EntryUtils.toString(entry), e);
+            logger.error("send message with exception, topic:{}, producerName:{}, entry:{}", producer.getTopic(), producer.getProducerName(), EntryUtils.toString(entry), e);
         }
-
         return false;
     }
 
@@ -126,29 +114,29 @@ public class PulsarProducer<T> implements IProducer<T> {
      * @throws IOException PulsarClientException
      */
     public void close() throws IOException {
-        if (producer != null) {
-            producer.close();
-        }
+        if (producer != null) producer.close();
     }
 
     /* ...... */
 
-    private void setProducer(Class<T> entryType, String topic, String producerName) {
-        if (!isInitProducer) {
+    private void initProducer(Class<T> entryType, String topic, String producerName) {
+        if (producer != null) {
+            logger.warn("producer has initialize, entryType:{}, topic:{}, producerName:{}", entryType.getName(), topic, producerName);
+            return;
+        }
+
+        try {
             Schema<T> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(entryType).build());
+            ProducerBuilder<T> builder = client.newProducer(schema).topic(topic);
 
-            try {
-                ProducerBuilder<T> builder = client.newProducer(schema).topic(topic);
-                if (producerName != null && !producerName.isEmpty()) {
-                    builder.producerName(producerName);
-                }
-
-                producer = builder.create();
-                isInitProducer = true;
-            } catch (PulsarClientException e) {
-                logger.error("创建Producer异常, topic:{}, producerName:{}", topic, producerName, e);
-                throw new RuntimeException("创建Producer异常", e);
+            if (producerName != null && !producerName.isEmpty()) {
+                builder.producerName(producerName);
             }
+
+            producer = builder.create();
+        } catch (PulsarClientException e) {
+            logger.error("create producer exception, entryType:{}, topic:{}, producerName:{}", entryType.getName(), topic, producerName, e);
+            throw new RuntimeException("create producer exception", e);
         }
     }
 }
