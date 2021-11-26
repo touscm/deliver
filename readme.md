@@ -1,13 +1,5 @@
 # Getting Started
 
-### Reference Documentation
-
-For further reference, please consider the following sections:
-
-* [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
-* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/docs/2.5.4/maven-plugin/reference/html/)
-* [Create an OCI image](https://docs.spring.io/spring-boot/docs/2.5.4/maven-plugin/reference/html/#build-image)
-
 ### Use Pulsar
 maven reference
 ```xml
@@ -23,6 +15,7 @@ deliver.pulsar.url=pulsar://127.0.0.1:6650
 ```
 or
 ```properties
+deliver.pulsar.scheme=pulsar
 deliver.pulsar.host=127.0.0.1
 deliver.pulsar.port=6650
 ```
@@ -30,6 +23,42 @@ define PulsarClient
 ```java
 @Resource
 private PulsarClient client;
+```
+use Producer
+```java
+// define producer
+@Resource
+private IProducer<TEntry> producer;
+
+// init producer
+producer.init(TEntry.class, "topic", "producer");
+
+// send message
+producer.send(new TEntry());
+
+// send delay
+producer.sendAfter(new TEntry(), 60, TimeUnit.SECONDS);
+
+// send a time
+producer.sendAt(new TEntry(), Instant.parse("2021-11-03T08:36:00.000Z").toEpochMilli());
+```
+use Consumer
+```java
+// define consumer
+@Resource
+IConsumer<TEntry> consumer;
+
+// register receive process
+consumer.reg(entry -> {
+    System.out.printf("receive message, time:" + new Date() + " entry:" + EntryUtils.toString(entry) + "%n");
+    return true;
+});
+
+// start long-term receive
+consumer.start(TEntry.class, ConsumeMode.Longtime, SubscriptionType.Shared, 1, "topic", "subscribe");
+
+// start scheduled receive
+consumer.start(TEntry.class, ConsumeMode.Longtime, SubscriptionType.Scheduled, 1, "topic", "subscribe");
 ```
 
 ### Use Access Deliver
