@@ -8,6 +8,7 @@ import org.apache.pulsar.client.api.schema.SchemaDefinition;
 import org.apache.pulsar.client.internal.DefaultImplementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -21,6 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+@Scope("prototype")
 @Service("PulsarConsumer")
 public class PulsarConsumer<T> implements IConsumer<T> {
     private static final Logger logger = LoggerFactory.getLogger(PulsarConsumer.class);
@@ -130,9 +132,7 @@ public class PulsarConsumer<T> implements IConsumer<T> {
             if (scheduledExecutorService != null) scheduledExecutorService.shutdown();
         }
 
-        if (consumer != null) {
-            consumer.close();
-        }
+        if (consumer != null) consumer.close();
     }
 
     /* ...... */
