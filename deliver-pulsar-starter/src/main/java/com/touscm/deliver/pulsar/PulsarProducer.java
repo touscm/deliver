@@ -6,6 +6,7 @@ import org.apache.pulsar.client.api.schema.SchemaDefinition;
 import org.apache.pulsar.client.internal.DefaultImplementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -15,6 +16,7 @@ import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+@Scope("prototype")
 @Service("PulsarProducer")
 public class PulsarProducer<T> implements IProducer<T> {
     private static final Logger logger = LoggerFactory.getLogger(PulsarProducer.class);
