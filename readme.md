@@ -6,7 +6,7 @@ maven reference
 <dependency>
     <groupId>com.touscm</groupId>
     <artifactId>deliver-pulsar-starter</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
 </dependency>
 ```
 config properties
@@ -67,7 +67,7 @@ maven reference
 <dependency>
     <groupId>com.touscm</groupId>
     <artifactId>deliver-access</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
 </dependency>
 ```
 add Spring Boot scan path

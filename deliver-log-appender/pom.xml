@@ -6,11 +6,11 @@
     <parent>
         <groupId>com.touscm</groupId>
         <artifactId>deliver</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>deliver-log-appender</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <name>deliver-log-appender</name>
     <description>deliver-log-appender</description>
 

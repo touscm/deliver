@@ -128,7 +128,7 @@ public class PulsarProducer<T> implements IProducer<T> {
         }
 
         try {
-            Schema<T> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(entryType).build());
+            Schema<T> schema = DefaultImplementation.getDefaultImplementation().newJSONSchema(SchemaDefinition.builder().withPojo(entryType).build());
             ProducerBuilder<T> builder = client.newProducer(schema).topic(topic);
 
             if (producerName != null && !producerName.isEmpty()) {

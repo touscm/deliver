@@ -112,7 +112,7 @@ public class PulsarLogReceiver implements ILogReceiver {
                 }
 
                 String subscribe = StringUtils.isEmpty(config.getLogSubscribe()) ? SUBSCRIBE : config.getLogSubscribe();
-                Schema<LogEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(LogEntry.class).build());
+                Schema<LogEntry> schema = DefaultImplementation.getDefaultImplementation().newJSONSchema(SchemaDefinition.builder().withPojo(LogEntry.class).build());
 
                 try {
                     consumer = client.newConsumer(schema).topic(topic).subscriptionName(subscribe).subscribe();

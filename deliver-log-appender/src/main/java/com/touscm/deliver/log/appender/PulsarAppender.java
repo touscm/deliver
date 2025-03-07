@@ -155,7 +155,7 @@ public class PulsarAppender extends AppenderBase<ILoggingEvent> implements Close
             if (StringUtils.isEmpty(topic)) throw new RuntimeException("未指定Pulsar日志Topic");
 
             String producerName = StringUtils.isBlank(this.producerName) ? PRODUCER : this.producerName;
-            Schema<LogEntry> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(LogEntry.class).build());
+            Schema<LogEntry> schema = DefaultImplementation.getDefaultImplementation().newJSONSchema(SchemaDefinition.builder().withPojo(LogEntry.class).build());
 
             try {
                 producer = client.newProducer(schema).topic(topic).producerName(producerName).create();

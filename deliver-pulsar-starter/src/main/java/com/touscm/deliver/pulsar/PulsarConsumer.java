@@ -138,7 +138,7 @@ public class PulsarConsumer<T> implements IConsumer<T> {
     /* ...... */
 
     private void setConsumer(Class<T> entryType, SubscriptionType subscriptionType, String topic, String subscribe) {
-        Schema<T> schema = DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(entryType).build());
+        Schema<T> schema = DefaultImplementation.getDefaultImplementation().newJSONSchema(SchemaDefinition.builder().withPojo(entryType).build());
         try {
             ConsumerBuilder<T> consumerBuilder = client.newConsumer(schema).topic(topic);
 

@@ -6,11 +6,11 @@
     <parent>
         <artifactId>deliver</artifactId>
         <groupId>com.touscm</groupId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>deliver-elastic</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>deliver-elastic</name>
     <description>deliver-elastic</description>
@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.touscm</groupId>
             <artifactId>deliver-base</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
 
         <dependency>

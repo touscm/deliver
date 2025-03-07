@@ -52,7 +52,6 @@ public class ElasticSearch {
     public static final String KEY_TO = "to_";
 
     public static final String KEY_FUZZY = "fuzzy_";
-
     public static final String KEY_PREFIX = "prefix_";
 
     @Resource
