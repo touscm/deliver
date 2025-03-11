@@ -1,8 +1,9 @@
 package com.touscm.deliver.log.receiver;
 
+import com.touscm.deliver.base.utils.EntryUtils;
 import com.touscm.deliver.log.LogEntry;
-import com.touscm.deliver.log.StringUtils;
 import com.touscm.deliver.pulsar.autoconfigure.PulsarProperties;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.schema.SchemaDefinition;
 import org.apache.pulsar.client.internal.DefaultImplementation;
@@ -69,7 +70,7 @@ public class PulsarLogReceiver implements ILogReceiver {
             try {
                 isProcessed = receiver.apply(entry);
             } catch (Throwable e) {
-                logger.error("日志处理异常, messageKey:{}, logEntry:{}", message.getKey(), StringUtils.toJson(entry), e);
+                logger.error("日志处理异常, messageKey:{}, logEntry:{}", message.getKey(), EntryUtils.toString(entry), e);
             }
 
             if (!isProcessed) return;

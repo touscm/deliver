@@ -1,13 +1,35 @@
 package com.touscm.deliver.log;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import com.touscm.deliver.base.utils.DateUtils;
 
+/**
+ * log entry
+ */
 public class LogEntry {
+    /**
+     * log create time
+     */
     private String timestamp;
+    /**
+     * lob level
+     */
     private String level;
+    /**
+     * log trigger class
+     */
     private String clazz;
+    /**
+     * log trigger method
+     */
     private String method;
+    /**
+     * log trigger line
+     */
     private String line;
+    /**
+     * log message
+     */
     private String message;
 
     /* ...... */
@@ -27,7 +49,7 @@ public class LogEntry {
     /* ...... */
 
     public static LogEntry parse(ILoggingEvent event) {
-        String timestamp = StringUtils.standardUTC(event.getTimeStamp()), level = event.getLevel().levelStr, clazz = event.getLoggerName(), method = null, line = null, message = event.getFormattedMessage();
+        String timestamp = DateUtils.toString(event.getTimeStamp()), level = event.getLevel().levelStr, clazz = event.getLoggerName(), method = null, line = null, message = event.getFormattedMessage();
 
         StackTraceElement[] callerData = event.getCallerData();
         if (callerData != null && callerData.length > 0) {

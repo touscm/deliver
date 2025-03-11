@@ -2,8 +2,9 @@ package com.touscm.deliver.log.appender;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
+import com.touscm.deliver.base.utils.EntryUtils;
 import com.touscm.deliver.log.LogEntry;
-import com.touscm.deliver.log.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
@@ -101,7 +102,7 @@ public class PulsarAppender extends AppenderBase<ILoggingEvent> implements Close
         try {
             producer.send(entry);
         } catch (PulsarClientException e) {
-            logger.error("发送日志消息异常, event:{}, log:{}", StringUtils.toJson(event), e);
+            logger.error("发送日志消息异常, event:{}", EntryUtils.toString(event), e);
         }
     }
 

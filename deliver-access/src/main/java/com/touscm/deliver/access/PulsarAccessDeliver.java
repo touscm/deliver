@@ -1,8 +1,8 @@
 package com.touscm.deliver.access;
 
-import com.touscm.deliver.base.utils.StringUtils;
 import com.touscm.deliver.pulsar.IProducer;
 import com.touscm.deliver.pulsar.autoconfigure.PulsarProperties;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PreDestroy;

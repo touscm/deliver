@@ -21,6 +21,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.touscm</groupId>
+            <artifactId>deliver-base</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>

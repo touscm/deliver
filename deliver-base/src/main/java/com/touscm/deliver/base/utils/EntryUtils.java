@@ -1,6 +1,7 @@
 package com.touscm.deliver.base.utils;
 
 import com.google.gson.Gson;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ public class EntryUtils {
     }
 
     public static <T> T parse(@NotNull Class<T> entryType, @NotBlank String json) {
-        if (entryType != null && StringUtils.isNotEmpty(json)) {
+        if (entryType != null &&  StringUtils.isNotEmpty(json)) {
             try {
                 return gson.fromJson(json, entryType);
             } catch (Exception e) {

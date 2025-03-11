@@ -2,9 +2,8 @@ package com.touscm.deliver.elastic;
 
 import com.touscm.deliver.base.entry.ElasticEntry;
 import com.touscm.deliver.base.entry.PagingEntry;
-import com.touscm.deliver.base.utils.CollectionUtils;
 import com.touscm.deliver.base.utils.EntryUtils;
-import com.touscm.deliver.base.utils.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -308,7 +307,7 @@ public class ElasticSearch {
     private SearchSourceBuilder getSearchSourceBuilder(Map<String, Object> filters, String sort, boolean isAsc, int from, int size) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
 
-        if (CollectionUtils.isNotEmpty(filters)) {
+        if (filters!= null && ! filters.isEmpty()) {
             BoolQueryBuilder queryBuilder = new BoolQueryBuilder();
 
             filters.entrySet().stream().filter(a -> StringUtils.isNotEmpty(a.getKey()) && a.getValue() != null).forEach(a -> {

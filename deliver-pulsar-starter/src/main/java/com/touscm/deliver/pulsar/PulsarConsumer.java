@@ -2,10 +2,10 @@ package com.touscm.deliver.pulsar;
 
 import com.touscm.deliver.base.constant.ConsumeMode;
 import com.touscm.deliver.base.utils.EntryUtils;
-import com.touscm.deliver.base.utils.StringUtils;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.schema.SchemaDefinition;
 import org.apache.pulsar.client.internal.DefaultImplementation;
+import org.apache.pulsar.shade.org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
