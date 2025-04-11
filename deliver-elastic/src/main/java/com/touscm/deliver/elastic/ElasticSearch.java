@@ -147,6 +147,25 @@ public class ElasticSearch {
     }
 
     /**
+     * 统计索引记录数
+     *
+     * @param index  索引
+     * @param filter 检索条件
+     * @return 记录数
+     */
+    public long count(@NotBlank String index, Map<String, Object> filter) {
+        try {
+            CountResponse response = this.esClient.count(new CountRequest(index).source(this.getCountSourceBuilder(filter)), RequestOptions.DEFAULT);
+
+            logger.debug("ElasticSearch Count API, index:{}, response:{}", index, response.toString());
+            return response.getCount();
+        } catch (IOException e) {
+            logger.error("ElasticSearch Count API with exception, index:{}", index, e);
+        }
+        return 0;
+    }
+
+    /**
      * 取得索引记录
      *
      * @param entryType 实体类型
@@ -269,11 +288,11 @@ public class ElasticSearch {
     public <T> PagingEntry<ElasticEntry<T>> paging(@NotNull Class<T> entryType, @NotBlank String index, int page, int size, Map<String, Object> filter, String sort, boolean isAsc) {
         if (page <= 1) page = 1;
         int from = (page - 1) * size;
-        SearchRequest request = new SearchRequest(index).source(getSearchSourceBuilder(filter, sort, isAsc, from, size));
 
-        long itemCount = count(index);
+        long itemCount = count(index, filter);
         if (itemCount == 0) return new PagingEntry<>();
 
+        SearchRequest request = new SearchRequest(index).source(getSearchSourceBuilder(filter, sort, isAsc, from, size));
         try {
             SearchResponse response = this.esClient.search(request, RequestOptions.DEFAULT);
             logger.debug("ElasticSearch Search API, index:{}, sort:{}, page:{}, size:{}, response:{}", index, sort, page, size, response);
@@ -304,10 +323,38 @@ public class ElasticSearch {
 
     /* ...... */
 
+    private SearchSourceBuilder getCountSourceBuilder(Map<String, Object> filters) {
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+
+        if (filters != null && !filters.isEmpty()) {
+            BoolQueryBuilder queryBuilder = new BoolQueryBuilder();
+
+            filters.entrySet().stream().filter(a -> StringUtils.isNotEmpty(a.getKey()) && a.getValue() != null).forEach(a -> {
+                if (a.getKey().startsWith(KEY_FROM) && KEY_FROM.length() < a.getKey().length()) {
+                    queryBuilder.must(QueryBuilders.rangeQuery(a.getKey().substring(KEY_FROM.length())).from(a.getValue()));
+                } else if (a.getKey().startsWith(KEY_TO) && KEY_TO.length() < a.getKey().length()) {
+                    queryBuilder.must(QueryBuilders.rangeQuery(a.getKey().substring(KEY_TO.length())).to(a.getValue()));
+                } else if (a.getKey().startsWith(KEY_FUZZY) && KEY_FUZZY.length() < a.getKey().length()) {
+                    queryBuilder.must(QueryBuilders.fuzzyQuery(a.getKey().substring(KEY_FUZZY.length()), a.getValue()));
+                } else if (a.getKey().startsWith(KEY_PREFIX) && KEY_PREFIX.length() < a.getKey().length() && a.getValue() instanceof String) {
+                    queryBuilder.must(QueryBuilders.prefixQuery(a.getKey().substring(KEY_PREFIX.length()), (String) a.getValue()));
+                } else {
+                    queryBuilder.must(QueryBuilders.matchPhraseQuery(a.getKey(), a.getValue()));
+                }
+            });
+
+            if (queryBuilder.hasClauses()) {
+                builder.query(queryBuilder);
+            }
+        }
+
+        return builder;
+    }
+
     private SearchSourceBuilder getSearchSourceBuilder(Map<String, Object> filters, String sort, boolean isAsc, int from, int size) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
 
-        if (filters!= null && ! filters.isEmpty()) {
+        if (filters != null && !filters.isEmpty()) {
             BoolQueryBuilder queryBuilder = new BoolQueryBuilder();
 
             filters.entrySet().stream().filter(a -> StringUtils.isNotEmpty(a.getKey()) && a.getValue() != null).forEach(a -> {
